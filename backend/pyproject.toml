@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 dependencies = [
     "aiohttp>=3.12.15",
     "aioredis>=2.0.0",
+    "asyncpg>=0.32.0",
     "beautifulsoup4>=4.13.4",
     "cachetools>=6.2.0",
     "cryptography>=46.0.2",
@@ -37,8 +38,13 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pre-commit>=4.3.0",
+    "pytest>=9.2.0",
 ]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "db: needs the Docker Postgres on localhost:5433 (skipped when unreachable)",
+]
 pythonpath = ["."]
