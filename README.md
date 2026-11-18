@@ -39,13 +39,13 @@ cd backend && uv sync && uv run pytest -v -rs    # 31 tests (DB tests skip if Po
 - "March" means the property's local month: that's how clients keep their books.
 - Fail loudly with a 503 rather than show fake numbers.
 - Return 404, not 403, for another tenant's property, so the response doesn't reveal that it exists.
-- Only the revenue path was changed; auth, the UI and the legacy code are untouched.
+- Only the revenue path was changed; auth and the legacy code are untouched. In the UI, only the revenue card's error handling changed: it clears stale errors, doesn't retry a 404, and says when a property isn't available for your account.
 
 ## Not done yet
 
 - Unknown users default to Sunset in the tenant resolver. That's auth code, out of scope, and the biggest remaining risk.
 - If Redis is down, the endpoint returns 500.
-- The UI lists every property for every tenant.
+- The UI lists every property for every tenant, and shows Sunset's name for Ocean's prop-001.
 
 ## How I used Claude Code
 

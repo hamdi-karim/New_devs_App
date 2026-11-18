@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { SecureAPI } from '../lib/secureApi';
+import { ApiError, SecureAPI } from '../lib/secureApi';
+
+const revenueErrorMessage = (err: unknown): string => {
+    if (err instanceof ApiError && err.status === 404) {
+        return "This property isn't available for your account.";
+    }
+    if (err instanceof ApiError && err.status === 503) {
+        return 'Revenue data is temporarily unavailable. Please try again shortly.';
+    }
+    return 'Failed to load revenue data';
+};
 
 interface RevenueData {
     property_id: string;
@@ -22,8 +32,13 @@ export const RevenueSummary: React.FC<RevenueSummaryProps> = ({ propertyId = 'pr
     const activeTenant = debugTenant || 'candidate';
 
     useEffect(() => {
+        // Ignore a response that arrives after the user picked another property.
+        let cancelled = false;
+
         const fetchRevenue = async () => {
             setLoading(true);
+            setError('');
+            setData(null);
             try {
                 // Use SecureAPI to handle authentication automatically
                 // We pass the simulatedTenant option which SecureAPI will attach as a header
@@ -31,16 +46,20 @@ export const RevenueSummary: React.FC<RevenueSummaryProps> = ({ propertyId = 'pr
                     simulatedTenant: activeTenant,
                     timestamp: Date.now()
                 });
-                setData(response);
+                if (!cancelled) setData(response);
             } catch (err) {
-                setError('Failed to load revenue data');
+                if (cancelled) return;
+                setError(revenueErrorMessage(err));
                 console.error(err);
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchRevenue();
+        return () => {
+            cancelled = true;
+        };
     }, [propertyId, activeTenant]);
 
     if (loading) {

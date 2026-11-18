@@ -43,6 +43,25 @@ export class TenantIsolationError extends Error {
   }
 }
 
+/** Non-OK HTTP response; carries the status so callers can react to it. */
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
+/** Client errors won't succeed on retry (except timeout / rate limit). */
+const isNonRetryable = (error: unknown): boolean =>
+  error instanceof ApiError &&
+  error.status >= 400 &&
+  error.status < 500 &&
+  error.status !== 408 &&
+  error.status !== 429;
+
 export class SecureAPIClient {
   private static instance: SecureAPIClient;
   private backendUrl: string;
@@ -698,7 +717,7 @@ export class SecureAPIClient {
           }
 
           const msg = detail || bodyText || `${response.status} ${response.statusText}`;
-          throw new Error(`API request failed: ${msg}`);
+          throw new ApiError(`API request failed: ${msg}`, response.status);
         }
 
         // Handle response parsing based on content type and status
@@ -753,7 +772,7 @@ export class SecureAPIClient {
         }
 
         // Don't retry on specific errors
-        if (error instanceof TenantIsolationError) {
+        if (error instanceof TenantIsolationError || isNonRetryable(error)) {
           throw error;
         }
 
